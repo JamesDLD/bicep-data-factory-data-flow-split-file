@@ -1,39 +1,32 @@
 @description('Data Factory Name')
 param dataFactoryName string = 'datafactory${uniqueString(resourceGroup().id)}'
 
-@description('Location of the data factory.')
-param location string = resourceGroup().location
-
 @description('Name of the Azure storage account that contains the input/output data.')
 param storageAccountName string = 'storage${uniqueString(resourceGroup().id)}'
 
 @description('Name of the blob container in the Azure Storage account.')
 param blobContainerName string = 'blob${uniqueString(resourceGroup().id)}'
 
-var dataFactoryLinkedServiceName = 'ArmtemplateStorageLinkedService'
-var dataFactoryDataSetInName = 'ArmtemplateTestDatasetIn'
-var dataFactoryDataSetOutName = 'ArmtemplateTestDatasetOut'
-var pipelineName = 'ArmtemplateSampleCopyPipeline'
+@description('Split the file each n lines')
+param partitionEachNLines string = '5'
 
-resource storageAccount 'Microsoft.Storage/storageAccounts@2021-08-01' = {
+var dataFactoryLinkedServiceName = 'ArmtemplateStorageLinkedService'
+var dataFactoryCsvDatasetInName = 'ArmtemplateTestCsvDatasetIn'
+var dataFactoryCsvDatasetOutName = 'ArmtemplateTestCsvDatasetOut'
+var pipelineName = 'ArmtemplateSampleCopyPipeline'
+var dataFactoryDataFlowName = 'ArmtemplateSampleDataFlowSplitFile'
+var partitionType = 'roundRobin'
+
+resource storageAccount 'Microsoft.Storage/storageAccounts@2021-08-01' existing = {
   name: storageAccountName
-  location: location
-  sku: {
-    name: 'Standard_LRS'
-  }
-  kind: 'StorageV2'
 }
 
 resource blobContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2021-08-01' = {
   name: '${storageAccount.name}/default/${blobContainerName}'
 }
 
-resource dataFactory 'Microsoft.DataFactory/factories@2018-06-01' = {
+resource dataFactory 'Microsoft.DataFactory/factories@2018-06-01' existing = {
   name: dataFactoryName
-  location: location
-  identity: {
-    type: 'SystemAssigned'
-  }
 }
 
 resource dataFactoryLinkedService 'Microsoft.DataFactory/factories/linkedservices@2018-06-01' = {
@@ -47,35 +40,34 @@ resource dataFactoryLinkedService 'Microsoft.DataFactory/factories/linkedservice
   }
 }
 
-resource dataFactoryDataSetIn 'Microsoft.DataFactory/factories/datasets@2018-06-01' = {
+resource dataFactoryCsvDatasetIn 'Microsoft.DataFactory/factories/datasets@2018-06-01' = {
   parent: dataFactory
-  name: dataFactoryDataSetInName
+  name: dataFactoryCsvDatasetInName
   properties: {
     linkedServiceName: {
       referenceName: dataFactoryLinkedService.name
       type: 'LinkedServiceReference'
     }
-    type: 'Binary'
+    type: 'DelimitedText'
     typeProperties: {
       location: {
         type: 'AzureBlobStorageLocation'
         container: blobContainerName
         folderPath: 'input'
-        fileName: 'emp.txt'
       }
     }
   }
 }
 
-resource dataFactoryDataSetOut 'Microsoft.DataFactory/factories/datasets@2018-06-01' = {
+resource dataFactoryCsvDatasetOut 'Microsoft.DataFactory/factories/datasets@2018-06-01' = {
   parent: dataFactory
-  name: dataFactoryDataSetOutName
+  name: dataFactoryCsvDatasetOutName
   properties: {
     linkedServiceName: {
       referenceName: dataFactoryLinkedService.name
       type: 'LinkedServiceReference'
     }
-    type: 'Binary'
+    type: 'DelimitedText'
     typeProperties: {
       location: {
         type: 'AzureBlobStorageLocation'
@@ -86,6 +78,48 @@ resource dataFactoryDataSetOut 'Microsoft.DataFactory/factories/datasets@2018-06
   }
 }
 
+resource dataFactoryDataFlow 'Microsoft.DataFactory/factories/dataflows@2018-06-01' = {
+  parent: dataFactory
+  name: dataFactoryDataFlowName
+  properties: {
+    type: 'MappingDataFlow'
+    typeProperties: {
+        sources: [
+            {
+                dataset: {
+                    referenceName: dataFactoryCsvDatasetIn.name
+                    type: 'DatasetReference'
+                }
+                name: 'source'
+                description: 'File to split'
+            }
+        ]
+        sinks: [
+            {
+                dataset: {
+                    referenceName: dataFactoryCsvDatasetOut.name
+                    type: 'DatasetReference'
+                }
+                name: 'sink'
+                description: 'Split data'
+            }
+        ]
+        transformations: []
+        scriptLines: [
+        'source(allowSchemaDrift: true,'
+        '     validateSchema: false,'
+        '     ignoreNoFilesFound: true) ~> source'
+        'source sink(allowSchemaDrift: true,'
+        '     validateSchema: false,'
+        '     skipDuplicateMapInputs: true,'
+        '     skipDuplicateMapOutputs: true,'
+        '     partitionBy("${partitionType}", ${partitionEachNLines})) ~> sink'
+        ]
+    }
+  }
+}
+
+/*
 resource dataFactoryPipeline 'Microsoft.DataFactory/factories/pipelines@2018-06-01' = {
   parent: dataFactory
   name: pipelineName
@@ -112,13 +146,13 @@ resource dataFactoryPipeline 'Microsoft.DataFactory/factories/pipelines@2018-06-
         }
         inputs: [
           {
-            referenceName: dataFactoryDataSetIn.name
+            referenceName: dataFactoryCsvDatasetIn.name
             type: 'DatasetReference'
           }
         ]
         outputs: [
           {
-            referenceName: dataFactoryDataSetOut.name
+            referenceName: dataFactoryCsvDatasetOut.name
             type: 'DatasetReference'
           }
         ]
@@ -130,3 +164,4 @@ resource dataFactoryPipeline 'Microsoft.DataFactory/factories/pipelines@2018-06-
 output dataFactoryName string = dataFactory.name
 output storageAccountName string = storageAccount.name
 output blobContainerName string = blobContainerName
+*/

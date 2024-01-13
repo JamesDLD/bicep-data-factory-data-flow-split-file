@@ -16,9 +16,14 @@ git https://github.com/JamesDLD/bicep-data-factory-data-flow-split-file.git .
 ```
 
 # Prerequisite
-1. An Azure Data Factory connected to an Azure Storage Account is available. The following repository demonstrate how to have all of those prerequisites met through Bicep: [Quickstart: Create an Azure Data Factory using Bicep](https://learn.microsoft.com/en-us/azure/data-factory/quickstart-create-data-factory-bicep?WT.mc_id=DP-MVP-5003548).
+
+1. An Azure Data Factory connected to an Azure Storage Account is available. The following repository demonstrate how to
+   have all of those prerequisites met through
+   Bicep: [Quickstart: Create an Azure Data Factory using Bicep](https://learn.microsoft.com/en-us/azure/data-factory/quickstart-create-data-factory-bicep?WT.mc_id=DP-MVP-5003548)
+   .
 
 I have clone the mentioned repository, you can deploy it through the following script.
+
 ```
 #variable
 location=westeurope
@@ -34,16 +39,30 @@ az deployment group what-if                                         \
                 --template-file data-factory-prerequisite-1.bicep          
 ##deploy
 az deployment group create                                          \
-                --name function_app                                 \
+                --name myDataFactory                                \
                 --resource-group $resourceGroupName                 \
                 --template-file data-factory-prerequisite-1.bicep 
 ```
+
 When the deployment finishes, you should see a message indicating the deployment succeeded.
 
-
 2. Upload the file that will be split
+
 ```
-blabla
+#variable
+variablesFromDeployment=$(az deployment group show                              \
+                            --resource-group $resourceGroupName                 \
+                            --name myDataFactory                                \
+                            --query "{dataFactoryName:properties.outputs.dataFactoryName.value, storageAccountName:properties.outputs.storageAccountName.value, blobContainerName:properties.outputs.blobContainerName.value}" \
+                            --output json)
+dataFactoryName=$(echo $variablesFromDeployment | jq -r '.dataFactoryName')
+storageAccountName=$(echo $variablesFromDeployment | jq -r '.storageAccountName')
+blobContainerName=$(echo $variablesFromDeployment | jq -r '.blobContainerName')
+
+#upload the file
+storageAccountKey=$(az storage account keys list -n $storageAccountName --query "[0].value" --out tsv)
+az storage blob upload --account-name $storageAccountName --account-key $storageAccountKey --container-name $blobContainerName --file file_to_split.csv --name input/file.csv
+                            
 ```
 
 # Create the Azure Data Flow that will split a file into multiple output files
@@ -52,28 +71,30 @@ Deploy the Bicep files using Azure CLI.
 
 ```
 #variable
+partitionEachNLines=10
 location=westeurope
 resourceGroupName=myDataFactoryResourceGroup
-
-#create an Azure resource group
-az group create --name $resourceGroupName --location $location
-
-#create an Azure Storage Account
-az group create --name $resourceGroupName --location $location
+variablesFromDeployment=$(az deployment group show                              \
+                            --resource-group $resourceGroupName                 \
+                            --name myDataFactory                                \
+                            --query "{dataFactoryName:properties.outputs.dataFactoryName.value, storageAccountName:properties.outputs.storageAccountName.value, blobContainerName:properties.outputs.blobContainerName.value}" \
+                            --output json)
+dataFactoryName=$(echo $variablesFromDeployment | jq -r '.dataFactoryName')
+storageAccountName=$(echo $variablesFromDeployment | jq -r '.storageAccountName')
+blobContainerName=$(echo $variablesFromDeployment | jq -r '.blobContainerName')
 
 #create an Azure Data Factory Data Flow with it's Pipeline 
-
 ##use the 'what-if' option to see what the code will try to create or update
-az deployment group what-if                                 \
-                --resource-group $resourceGroupName         \
-                --template-file function_app.bicep          \
-                --parameters appInsightsLocation=$location 
+az deployment group what-if                                                     \
+                --resource-group $resourceGroupName                             \
+                --template-file data-factory-data-flow-split-file.bicep         \
+                --parameters partitionEachNLines=$partitionEachNLines
 ##deploy
-az deployment group create                                  \
-                --name function_app                         \
-                --resource-group $resourceGroupName         \
-                --template-file function_app.bicep          \
-                --parameters appInsightsLocation=$location
+az deployment group create                                                      \
+                --name myDataFactoryDataFlowToSplitAFile                        \
+                --resource-group $resourceGroupName                             \
+                --template-file data-factory-data-flow-split-file.bicep         \
+                --parameters partitionEachNLines=$partitionEachNLines  
 
 ```
 
