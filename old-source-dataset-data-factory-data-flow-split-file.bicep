@@ -8,12 +8,12 @@ param storageAccountName string = 'storage${uniqueString(resourceGroup().id)}'
 param blobContainerName string = 'blob${uniqueString(resourceGroup().id)}'
 
 @description('Split the file each n lines')
-param numberOfPartition string = '5'
+param partitionEachNLines string = '5'
 
 var dataFactoryLinkedServiceName = 'ArmtemplateStorageLinkedService'
 var dataFactoryCsvDatasetInName = 'ArmtemplateTestCsvDatasetIn'
 var dataFactoryCsvDatasetOutName = 'ArmtemplateTestCsvDatasetOut'
-var pipelineName = 'ArmtemplateSampleSplitFilePipeline'
+var pipelineName = 'ArmtemplateSampleCopyPipeline'
 var dataFactoryDataFlowName = 'ArmtemplateSampleDataFlowSplitFile'
 var partitionType = 'roundRobin'
 
@@ -86,9 +86,9 @@ resource dataFactoryDataFlow 'Microsoft.DataFactory/factories/dataflows@2018-06-
     typeProperties: {
         sources: [
             {
-                linkedService: {
-                    referenceName: dataFactoryLinkedService.name
-                    type: 'LinkedServiceReference'
+                dataset: {
+                    referenceName: dataFactoryCsvDatasetIn.name
+                    type: 'DatasetReference'
                 }
                 name: 'source'
                 description: 'File to split'
@@ -96,9 +96,9 @@ resource dataFactoryDataFlow 'Microsoft.DataFactory/factories/dataflows@2018-06-
         ]
         sinks: [
             {
-                linkedService: {
-                    referenceName: dataFactoryLinkedService.name
-                    type: 'LinkedServiceReference'
+                dataset: {
+                    referenceName: dataFactoryCsvDatasetOut.name
+                    type: 'DatasetReference'
                 }
                 name: 'sink'
                 description: 'Split data'
@@ -106,67 +106,62 @@ resource dataFactoryDataFlow 'Microsoft.DataFactory/factories/dataflows@2018-06-
         ]
         transformations: []
         scriptLines: [
-        'source(useSchema: false,'
-        '     allowSchemaDrift: true,'
+        'source(allowSchemaDrift: true,'
         '     validateSchema: false,'
-        '     ignoreNoFilesFound: true,'
-        '     format: "delimited",'
-        '     container: "${blobContainerName}",'
-        '     folderPath: "input",'
-        '     columnDelimiter: ",",'
-        '     escapeChar: "\\",'
-        '     quoteChar:  "\'",'
-        '     columnNamesAsHeader: true,'
-        '     multiLineRow: true) ~> source'
+        '     ignoreNoFilesFound: true) ~> source'
         'source sink(allowSchemaDrift: true,'
         '     validateSchema: false,'
-        '     format: "delimited",'
-        '     container: "${blobContainerName}",'
-        '     folderPath: "output",'
-        '     columnDelimiter: ",",'
-        '     escapeChar: "\\",'
-        '     quoteChar:  "\'",'
-        '     columnNamesAsHeader: true,'
         '     skipDuplicateMapInputs: true,'
         '     skipDuplicateMapOutputs: true,'
-        '     partitionBy("${partitionType}", ${numberOfPartition})) ~> sink'
+        '     partitionBy("${partitionType}", ${partitionEachNLines})) ~> sink'
         ]
     }
   }
 }
 
 /*
-Splittait les fichier par x lignes
-
-*/
-
 resource dataFactoryPipeline 'Microsoft.DataFactory/factories/pipelines@2018-06-01' = {
   parent: dataFactory
   name: pipelineName
   properties: {
     activities: [
       {
-        name: 'MyDataflowActivity'
-        type: 'ExecuteDataFlow'
+        name: 'MyCopyActivity'
+        type: 'Copy'
         typeProperties: {
-          traceLevel: 'Fine'
-          dataFlow: {
-            referenceName: dataFactoryDataFlowName
-            type: 'DataFlowReference'
+          source: {
+            type: 'BinarySource'
+            storeSettings: {
+              type: 'AzureBlobStorageReadSettings'
+              recursive: true
+            }
           }
-          compute: {
-            computeType: 'General'
-            coreCount: 8
+          sink: {
+            type: 'BinarySink'
+            storeSettings: {
+              type: 'AzureBlobStorageWriteSettings'
+            }
           }
+          enableStaging: false
         }
-        policy: {
-            retry: 0
-            retryIntervalInSeconds: 30
-            secureInput: false
-            secureOutput: false
-            timeout: '0.12:00:00'
-        }
+        inputs: [
+          {
+            referenceName: dataFactoryCsvDatasetIn.name
+            type: 'DatasetReference'
+          }
+        ]
+        outputs: [
+          {
+            referenceName: dataFactoryCsvDatasetOut.name
+            type: 'DatasetReference'
+          }
+        ]
       }
     ]
   }
 }
+
+output dataFactoryName string = dataFactory.name
+output storageAccountName string = storageAccount.name
+output blobContainerName string = blobContainerName
+*/

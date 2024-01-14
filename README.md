@@ -71,7 +71,7 @@ Deploy the Bicep files using Azure CLI.
 
 ```
 #variable
-partitionEachNLines=10
+numberOfPartition=10
 location=westeurope
 resourceGroupName=myDataFactoryResourceGroup
 variablesFromDeployment=$(az deployment group show                              \
@@ -88,13 +88,13 @@ blobContainerName=$(echo $variablesFromDeployment | jq -r '.blobContainerName')
 az deployment group what-if                                                     \
                 --resource-group $resourceGroupName                             \
                 --template-file data-factory-data-flow-split-file.bicep         \
-                --parameters partitionEachNLines=$partitionEachNLines
+                --parameters numberOfPartition=$numberOfPartition
 ##deploy
 az deployment group create                                                      \
                 --name myDataFactoryDataFlowToSplitAFile                        \
                 --resource-group $resourceGroupName                             \
                 --template-file data-factory-data-flow-split-file.bicep         \
-                --parameters partitionEachNLines=$partitionEachNLines  
+                --parameters numberOfPartition=$numberOfPartition  
 
 ```
 
