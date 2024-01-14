@@ -14,6 +14,7 @@ var dataFactoryLinkedServiceName = 'ArmtemplateStorageLinkedService'
 var dataFactoryCsvDatasetInName = 'ArmtemplateTestCsvDatasetIn'
 var dataFactoryCsvDatasetOutName = 'ArmtemplateTestCsvDatasetOut'
 var pipelineName = 'ArmtemplateSampleSplitFilePipeline'
+var cleanupPipelineName = 'ArmtemplateSampleDeletePipeline'
 var dataFactoryDataFlowName = 'ArmtemplateSampleDataFlowSplitFile'
 var partitionType = 'roundRobin'
 
@@ -135,11 +136,6 @@ resource dataFactoryDataFlow 'Microsoft.DataFactory/factories/dataflows@2018-06-
   }
 }
 
-/*
-Splittait les fichier par x lignes
-
-*/
-
 resource dataFactoryPipeline 'Microsoft.DataFactory/factories/pipelines@2018-06-01' = {
   parent: dataFactory
   name: pipelineName
@@ -157,6 +153,38 @@ resource dataFactoryPipeline 'Microsoft.DataFactory/factories/pipelines@2018-06-
           compute: {
             computeType: 'General'
             coreCount: 8
+          }
+        }
+        policy: {
+            retry: 0
+            retryIntervalInSeconds: 30
+            secureInput: false
+            secureOutput: false
+            timeout: '0.12:00:00'
+        }
+      }
+    ]
+  }
+}
+
+resource dataFactoryCleanupPipeline 'Microsoft.DataFactory/factories/pipelines@2018-06-01' = {
+  parent: dataFactory
+  name: cleanupPipelineName
+  properties: {
+    activities: [
+      {
+        name: 'MyDataflowDeleteActivity'
+        type: 'Delete'
+        typeProperties: {
+          dataset: {
+            referenceName: dataFactoryCsvDatasetOut.name
+            type: 'DatasetReference'
+          }
+          enableLogging: false
+          storeSettings: {
+            type: 'AzureBlobStorageReadSettings'
+            recursive: true
+            enablePartitionDiscovery: false
           }
         }
         policy: {
