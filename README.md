@@ -78,7 +78,7 @@ Deploy the Bicep files using Azure CLI.
 
 ```
 #variable
-numberSplittedFiles=2
+numberOfSplittedFiles=2
 blobFolderToSplit="input"
 blobNameToSplit="file.csv"
 blobOutputFolder="output"
@@ -100,7 +100,7 @@ az deployment group what-if                                                     
                 --parameters dataFactoryName=$dataFactoryName                    \
                              storageAccountName=$storageAccountName              \
                              blobContainerName=$blobContainerName                \
-                             numberOfPartition=$numberSplittedFiles              \
+                             numberOfPartition=$numberOfSplittedFiles              \
                              blobFolderToSplit=$blobFolderToSplit                \
                              blobNameToSplit=$blobNameToSplit                    \
                              blobOutputFolder=$blobOutputFolder
@@ -112,7 +112,7 @@ az deployment group create                                                      
                 --parameters dataFactoryName=$dataFactoryName                    \
                              storageAccountName=$storageAccountName              \
                              blobContainerName=$blobContainerName                \
-                             numberOfPartition=$numberSplittedFiles              \
+                             numberOfPartition=$numberOfSplittedFiles              \
                              blobFolderToSplit=$blobFolderToSplit                \
                              blobNameToSplit=$blobNameToSplit                    \
                              blobOutputFolder=$blobOutputFolder
