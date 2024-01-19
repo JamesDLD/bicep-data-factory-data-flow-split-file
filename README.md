@@ -100,7 +100,7 @@ az deployment group what-if                                                     
                 --parameters dataFactoryName=$dataFactoryName                    \
                              storageAccountName=$storageAccountName              \
                              blobContainerName=$blobContainerName                \
-                             numberOfPartition=$numberOfSplittedFiles              \
+                             numberOfPartition=$numberOfSplittedFiles            \
                              blobFolderToSplit=$blobFolderToSplit                \
                              blobNameToSplit=$blobNameToSplit                    \
                              blobOutputFolder=$blobOutputFolder
@@ -112,7 +112,7 @@ az deployment group create                                                      
                 --parameters dataFactoryName=$dataFactoryName                    \
                              storageAccountName=$storageAccountName              \
                              blobContainerName=$blobContainerName                \
-                             numberOfPartition=$numberOfSplittedFiles              \
+                             numberOfPartition=$numberOfSplittedFiles            \
                              blobFolderToSplit=$blobFolderToSplit                \
                              blobNameToSplit=$blobNameToSplit                    \
                              blobOutputFolder=$blobOutputFolder
