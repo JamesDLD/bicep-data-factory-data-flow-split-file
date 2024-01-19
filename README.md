@@ -97,7 +97,10 @@ blobContainerName=$(echo $variablesFromDeployment | jq -r '.blobContainerName')
 az deployment group what-if                                                      \
                 --resource-group $resourceGroupName                              \
                 --template-file data-factory-data-flow-split-file.bicep          \
-                --parameters numberOfPartition=$numberSplittedFiles              \
+                --parameters dataFactoryName=$dataFactoryName                    \
+                             storageAccountName=$storageAccountName              \
+                             blobContainerName=$blobContainerName                \
+                             numberOfPartition=$numberSplittedFiles              \
                              blobFolderToSplit=$blobFolderToSplit                \
                              blobNameToSplit=$blobNameToSplit                    \
                              blobOutputFolder=$blobOutputFolder
@@ -106,7 +109,10 @@ az deployment group create                                                      
                 --name myDataFactoryDataFlowToSplitAFile                         \
                 --resource-group $resourceGroupName                              \
                 --template-file data-factory-data-flow-split-file.bicep          \
-                --parameters numberOfPartition=$numberSplittedFiles              \
+                --parameters dataFactoryName=$dataFactoryName                    \
+                             storageAccountName=$storageAccountName              \
+                             blobContainerName=$blobContainerName                \
+                             numberOfPartition=$numberSplittedFiles              \
                              blobFolderToSplit=$blobFolderToSplit                \
                              blobNameToSplit=$blobNameToSplit                    \
                              blobOutputFolder=$blobOutputFolder
