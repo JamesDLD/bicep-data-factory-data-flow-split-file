@@ -136,7 +136,7 @@ resource dataFactoryPipeline 'Microsoft.DataFactory/factories/pipelines@2018-06-
         typeProperties: {
           traceLevel: 'Fine'
           dataFlow: {
-            referenceName: dataFactoryDataFlowName
+            referenceName: dataFactoryDataFlow.name
             type: 'DataFlowReference'
           }
           compute: {
