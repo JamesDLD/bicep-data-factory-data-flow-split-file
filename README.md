@@ -12,7 +12,7 @@ article [Azure Data Factory: How to split a file into multiple output files with
 Download the sample repository, run the following command in your local terminal window:
 
 ```
-git https://github.com/JamesDLD/bicep-data-factory-data-flow-split-file.git .
+git clone https://github.com/JamesDLD/bicep-data-factory-data-flow-split-file.git .
 ```
 
 # Prerequisite
@@ -22,7 +22,7 @@ git https://github.com/JamesDLD/bicep-data-factory-data-flow-split-file.git .
    Bicep: [Quickstart: Create an Azure Data Factory using Bicep](https://learn.microsoft.com/en-us/azure/data-factory/quickstart-create-data-factory-bicep?WT.mc_id=DP-MVP-5003548)
    .
 
-I have cloned the mentioned repository and adjusted it to that you can deploy the prerequisites through the following script.
+I have cloned the mentioned repository and adjusted it. You can deploy the prerequisites through the following script.
 
 ```
 #variable
@@ -59,10 +59,16 @@ variablesFromDeployment=$(az deployment group show                              
 dataFactoryName=$(echo $variablesFromDeployment | jq -r '.dataFactoryName')
 storageAccountName=$(echo $variablesFromDeployment | jq -r '.storageAccountName')
 blobContainerName=$(echo $variablesFromDeployment | jq -r '.blobContainerName')
+blobFolderToSplit="input"
+blobNameToSplit="file.csv"
 
 #upload the file
 storageAccountKey=$(az storage account keys list -n $storageAccountName --query "[0].value" --out tsv)
-az storage blob upload --account-name $storageAccountName --account-key $storageAccountKey --container-name $blobContainerName --file file_to_split.csv --name input/file.csv --overwrite
+az storage blob upload  --account-name $storageAccountName     \
+                        --account-key $storageAccountKey       \
+                        --container-name $blobContainerName    \
+                        --file file_to_split.csv               \
+                        --name "$blobFolderToSplit/$blobNameToSplit" --overwrite
                             
 ```
 
@@ -72,8 +78,10 @@ Deploy the Bicep files using Azure CLI.
 
 ```
 #variable
-numberOfPartition=10
-location=westeurope
+numberSplittedFiles=2
+blobFolderToSplit="input"
+blobNameToSplit="file.csv"
+blobOutputFolder="output"
 resourceGroupName=myDataFactoryResourceGroup
 variablesFromDeployment=$(az deployment group show                              \
                             --resource-group $resourceGroupName                 \
@@ -86,16 +94,22 @@ blobContainerName=$(echo $variablesFromDeployment | jq -r '.blobContainerName')
 
 #create an Azure Data Factory Data Flow with it's Pipeline 
 ##use the 'what-if' option to see what the code will try to create or update
-az deployment group what-if                                                     \
-                --resource-group $resourceGroupName                             \
-                --template-file data-factory-data-flow-split-file.bicep         \
-                --parameters numberOfPartition=$numberOfPartition
+az deployment group what-if                                                      \
+                --resource-group $resourceGroupName                              \
+                --template-file data-factory-data-flow-split-file.bicep          \
+                --parameters numberOfPartition=$numberSplittedFiles              \
+                             blobFolderToSplit=$blobFolderToSplit                \
+                             blobNameToSplit=$blobNameToSplit                    \
+                             blobOutputFolder=$blobOutputFolder
 ##deploy
-az deployment group create                                                      \
-                --name myDataFactoryDataFlowToSplitAFile                        \
-                --resource-group $resourceGroupName                             \
-                --template-file data-factory-data-flow-split-file.bicep         \
-                --parameters numberOfPartition=$numberOfPartition  
+az deployment group create                                                       \
+                --name myDataFactoryDataFlowToSplitAFile                         \
+                --resource-group $resourceGroupName                              \
+                --template-file data-factory-data-flow-split-file.bicep          \
+                --parameters numberOfPartition=$numberSplittedFiles              \
+                             blobFolderToSplit=$blobFolderToSplit                \
+                             blobNameToSplit=$blobNameToSplit                    \
+                             blobOutputFolder=$blobOutputFolder
 
 ```
 

@@ -1,17 +1,25 @@
 @description('Data Factory Name')
 param dataFactoryName string = 'datafactory${uniqueString(resourceGroup().id)}'
 
-@description('Name of the Azure storage account that contains the input/output data.')
+@description('Name of the Azure storage account that will contain the file we will split.')
 param storageAccountName string = 'storage${uniqueString(resourceGroup().id)}'
 
 @description('Name of the blob container in the Azure Storage account.')
 param blobContainerName string = 'blob${uniqueString(resourceGroup().id)}'
 
-@description('Split the file each n lines')
+@description('Split the file in n files')
 param numberOfPartition string = '5'
 
+@description('The Blob s name that will be splitted')
+param blobNameToSplit string = 'file.csv'
+
+@description('The Blob s folder path that will be splitted')
+param blobFolderToSplit string = 'input'
+
+@description('The Blob s folder path that will be splitted')
+param blobOutputFolder string = 'output'
+
 var dataFactoryLinkedServiceName = 'ArmtemplateStorageLinkedService'
-var dataFactoryCsvDatasetInName = 'ArmtemplateTestCsvDatasetIn'
 var dataFactoryCsvDatasetOutName = 'ArmtemplateTestCsvDatasetOut'
 var pipelineName = 'ArmtemplateSampleSplitFilePipeline'
 var cleanupPipelineName = 'ArmtemplateSampleDeletePipeline'
@@ -41,25 +49,6 @@ resource dataFactoryLinkedService 'Microsoft.DataFactory/factories/linkedservice
   }
 }
 
-resource dataFactoryCsvDatasetIn 'Microsoft.DataFactory/factories/datasets@2018-06-01' = {
-  parent: dataFactory
-  name: dataFactoryCsvDatasetInName
-  properties: {
-    linkedServiceName: {
-      referenceName: dataFactoryLinkedService.name
-      type: 'LinkedServiceReference'
-    }
-    type: 'DelimitedText'
-    typeProperties: {
-      location: {
-        type: 'AzureBlobStorageLocation'
-        container: blobContainerName
-        folderPath: 'input'
-      }
-    }
-  }
-}
-
 resource dataFactoryCsvDatasetOut 'Microsoft.DataFactory/factories/datasets@2018-06-01' = {
   parent: dataFactory
   name: dataFactoryCsvDatasetOutName
@@ -73,7 +62,7 @@ resource dataFactoryCsvDatasetOut 'Microsoft.DataFactory/factories/datasets@2018
       location: {
         type: 'AzureBlobStorageLocation'
         container: blobContainerName
-        folderPath: 'output'
+        folderPath: blobOutputFolder
       }
     }
   }
@@ -113,8 +102,8 @@ resource dataFactoryDataFlow 'Microsoft.DataFactory/factories/dataflows@2018-06-
         '     ignoreNoFilesFound: false,'
         '     format: \'delimited\','
         '     container: \'${blobContainerName}\','
-        '     folderPath: \'input\','
-        '     fileName: \'file.csv\','
+        '     folderPath: \'${blobFolderToSplit}\','
+        '     fileName: \'${blobNameToSplit}\','
         '     columnDelimiter: \',\','
         '     escapeChar: \'\\\\\','
         '     quoteChar:  \'\\\'\','
