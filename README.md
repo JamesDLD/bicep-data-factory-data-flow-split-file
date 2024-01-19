@@ -22,7 +22,7 @@ git https://github.com/JamesDLD/bicep-data-factory-data-flow-split-file.git .
    Bicep: [Quickstart: Create an Azure Data Factory using Bicep](https://learn.microsoft.com/en-us/azure/data-factory/quickstart-create-data-factory-bicep?WT.mc_id=DP-MVP-5003548)
    .
 
-I have clone the mentioned repository, you can deploy it through the following script.
+I have cloned the mentioned repository and adjusted it to that you can deploy the prerequisites through the following script.
 
 ```
 #variable
@@ -50,6 +50,7 @@ When the deployment finishes, you should see a message indicating the deployment
 
 ```
 #variable
+resourceGroupName=myDataFactoryResourceGroup
 variablesFromDeployment=$(az deployment group show                              \
                             --resource-group $resourceGroupName                 \
                             --name myDataFactory                                \
@@ -61,7 +62,7 @@ blobContainerName=$(echo $variablesFromDeployment | jq -r '.blobContainerName')
 
 #upload the file
 storageAccountKey=$(az storage account keys list -n $storageAccountName --query "[0].value" --out tsv)
-az storage blob upload --account-name $storageAccountName --account-key $storageAccountKey --container-name $blobContainerName --file file_to_split.csv --name input/file.csv
+az storage blob upload --account-name $storageAccountName --account-key $storageAccountKey --container-name $blobContainerName --file file_to_split.csv --name input/file.csv --overwrite
                             
 ```
 
