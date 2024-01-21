@@ -117,6 +117,7 @@ resource dataFactoryDataFlow 'Microsoft.DataFactory/factories/dataflows@2018-06-
         '     escapeChar: \'\\\\\','
         '     quoteChar:  \'\\\'\','
         '     columnNamesAsHeader: true,'
+        '     filePattern:(concat(\'${blobNameToSplit}\', toString(currentTimestamp(),\'yyyyMMddHHmmss\'),\'-[n].csv\')),'
         '     skipDuplicateMapInputs: true,'
         '     skipDuplicateMapOutputs: true,'
         '     partitionBy(\'${partitionType}\', ${numberOfPartition})) ~> sink'
